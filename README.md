@@ -1,0 +1,18 @@
+WebRTC
+==============
+Simple Vaadin add-on for a WebRTC peer-to-peer webcam sharing
+
+Uses now self signed SSL certificate and thus works only in FF. Should work also in Chrome and Edge if using a valid SSL certificate.
+
+
+Workflow
+========
+
+To compile the entire project, run "mvn install".
+
+To run the application, run "mvn jetty:run" and open http://localhost:8080/ .
+
+To produce a deployable production mode WAR:
+- change productionMode to true in the servlet class configuration (nested in the UI class)
+- run "mvn clean package"
+- test the war file with "mvn jetty:run-war"
