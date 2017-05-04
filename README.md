@@ -1,9 +1,8 @@
 WebRTC
-==============
+======
 Simple Vaadin add-on for a WebRTC peer-to-peer webcam sharing
 
 Uses now self signed SSL certificate and thus works only in FF. Should work also in Chrome and Edge if using a valid SSL certificate.
-
 
 Workflow
 ========
@@ -16,3 +15,7 @@ To produce a deployable production mode WAR:
 - change productionMode to true in the servlet class configuration (nested in the UI class)
 - run "mvn clean package"
 - test the war file with "mvn jetty:run-war"
+
+Acknowledgement
+===============
+The project is sponsored by our consulting client.
