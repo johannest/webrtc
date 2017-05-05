@@ -2,7 +2,7 @@ WebRTC
 ======
 Simple Vaadin add-on for a WebRTC peer-to-peer webcam sharing
 
-Uses now self signed SSL certificate and thus works only in FF. Should work also in Chrome and Edge if using a valid SSL certificate.
+Works only in FF as-is but should work also in Chrome and Edge if using a valid SSL certificate.
 
 Workflow
 ========
