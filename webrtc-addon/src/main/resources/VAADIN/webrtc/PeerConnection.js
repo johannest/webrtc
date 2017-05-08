@@ -1,7 +1,7 @@
 // Muaz Khan     - https://github.com/muaz-khan
 // MIT License   - https://www.webrtc-experiment.com/licence/
 // Documentation - https://github.com/muaz-khan/WebRTC-Experiment/tree/master/socket.io
-
+// Modified by Johannes Tuikkala @ vaadin.com (2017)
 (function() {
 
     window.PeerConnection = function(socketURL, socketEvent, userid) {
@@ -47,14 +47,14 @@
         this.onsdp = function(message) {
             var sdp = message.sdp;
 
-            if (sdp.type == 'offer') {
+            if (sdp.type === 'offer') {
                 root.peers[message.userid] = Answer.createAnswer(merge(options, {
                     MediaStreamTrack: root.MediaStreamTrack,
                     sdp: sdp
                 }));
             }
 
-            if (sdp.type == 'answer') {
+            if (sdp.type === 'answer') {
                 root.peers[message.userid].setRemoteDescription(sdp);
             }
         };
@@ -95,15 +95,13 @@
                 });
             },
             onStreamAdded: function(stream) {
-                console.debug('onStreamAdded', '>>>>>>', stream);
-
                 stream.onended = function() {
                     if (root.onStreamEnded) root.onStreamEnded(streamObject);
                 };
 
                 var mediaElement = document.createElement('video');
                 mediaElement.id = root.participant;
-                mediaElement[isFirefox ? 'mozSrcObject' : 'src'] = isFirefox ? stream : window.webkitURL.createObjectURL(stream);
+                mediaElement.srcObject = stream;
                 mediaElement.autoplay = true;
                 mediaElement.controls = true;
                 mediaElement.play();
@@ -147,12 +145,12 @@
         };
 
         window.onkeyup = function(e) {
-            if (e.keyCode == 116)
+            if (e.keyCode === 116)
                 root.close();
         };
 
 		function onmessage(message) {
-			if (message.userid == root.userid) return;
+			if (message.userid === root.userid) return;
             root.participant = message.userid;
 
             // for pretty logging
@@ -164,17 +162,17 @@
             }, '---'));
 
             // if someone shared SDP
-            if (message.sdp && message.to == root.userid) {
+            if (message.sdp && message.to === root.userid) {
                 self.onsdp(message);
             }
 
             // if someone shared ICE
-            if (message.candidate && message.to == root.userid) {
+            if (message.candidate && message.to === root.userid) {
                 self.onice(message);
             }
 
             // if someone sent participation request
-            if (message.participationRequest && message.to == root.userid) {
+            if (message.participationRequest && message.to === root.userid) {
                 self.participantFound = true;
 
                 if (root.onParticipationRequest) {
@@ -187,13 +185,13 @@
                 root.onUserFound(message.userid);
             }
 
-            if (message.userLeft && message.to == root.userid) {
+            if (message.userLeft && message.to === root.userid) {
                 closePeerConnections();
             }
 		}
 		
 		var socket = socketURL;
-		if(typeof socketURL == 'string') {
+		if(typeof socketURL === 'string') {
 			var socket = io.connect(socketURL);
 			socket.send = function(data) {
 				socket.emit(socketEvent, data);
@@ -203,35 +201,13 @@
         socket.on(socketEvent, onmessage);
     }
 
-    navigator.getUserMedia = navigator.mozGetUserMedia || navigator.webkitGetUserMedia;
-    window.URL = window.webkitURL || window.URL;
-
-    var isFirefox = !!navigator.mozGetUserMedia;
-    var isChrome = !!navigator.webkitGetUserMedia;
-
     var STUN = {
-        urls: isChrome ? 'stun:stun.l.google.com:19302' : 'stun:23.21.150.121'
-    };
-
-    var TURN = {
-        urls: 'turn:homeo@turn.bistri.com:80',
-        credential: 'homeo'
+        urls: 'stun:23.21.150.121'
     };
 
     var iceServers = {
         iceServers: [STUN]
     };
-
-    if (isChrome) {
-        if (parseInt(navigator.userAgent.match( /Chrom(e|ium)\/([0-9]+)\./ )[2]) >= 28)
-            TURN = {
-                url: 'turn:turn.bistri.com:80',
-                credential: 'homeo',
-                username: 'homeo'
-            };
-
-        iceServers.iceServers = [STUN, TURN];
-    }
 
     var optionalArgument = {
         optional: [{
@@ -331,7 +307,4 @@
         }
         return mergein;
     }
-
-	window.URL = window.webkitURL || window.URL;
-
 })();
