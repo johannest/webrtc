@@ -1,11 +1,20 @@
+/**
+ * Source code modified from code of
+ * https://github.com/muaz-khan/WebRTC-Experiment/tree/master/socket.io
+ * and
+ * https://github.com/webrtc/samples/blob/gh-pages/src/content/getusermedia/gum/js/main.js
+ */
 window.org_vaadin_webrtc_WebRTC =
     function () {
         var self = this;
         var element = this.getElement();
+
         var videosContainer = document.createElement("div");
         videosContainer.id = "videos-container";
         element.appendChild(videosContainer);
         var peer;
+        var selfId;
+        var peerId;
 
         this.onStateChange = function () {
         };
@@ -13,6 +22,7 @@ window.org_vaadin_webrtc_WebRTC =
         this.connect = function (username, roomid) {
             var channel = roomid;
             var sender = username;
+            selfId = username;
             var SIGNALING_SERVER = 'https://webrtcweb.com:9559/';
             io.connect(SIGNALING_SERVER).emit('new-channel', {
                 channel: channel,
@@ -39,12 +49,14 @@ window.org_vaadin_webrtc_WebRTC =
                 self.connected(userid);
                 console.log("onUserFound: "+userid);
 
-                setTimeout(function() {
                     getUserMedia(function (stream) {
+                        var videoTracks = stream.getVideoTracks();
+                        console.log('Got stream with constraints:', constraints);
+                        console.log('Using video device: ' + videoTracks[0].label);
+
                         peer.addStream(stream);
                         peer.sendParticipationRequest(userid);
                     });
-                }, 500);
             };
 
             peer.onStreamAdded = function(e) {
@@ -82,6 +94,10 @@ window.org_vaadin_webrtc_WebRTC =
             });
         };
 
+        this.disconnect = function() {
+            peer.close();
+        };
+
         function scaleVideos() {
             var videos = document.querySelectorAll('video'),
                 length = videos.length, video;
@@ -110,23 +126,38 @@ window.org_vaadin_webrtc_WebRTC =
             }
         }
         window.onresize = scaleVideos;
-        // you need to capture getUserMedia yourself!
-        function getUserMedia(callback) {
-            var hints = {audio:true,video:{
-                optional: [],
-                mandatory: {}
-            }};
-            navigator.getUserMedia(hints,function(stream) {
-                var video = document.createElement('video');
-                video.src = URL.createObjectURL(stream);
-                video.controls = true;
-                video.muted = true;
-                peer.onStreamAdded({
-                    mediaElement: video,
-                    userid: 'self',
-                    stream: stream
-                });
-                callback(stream);
+
+        function handleError(error) {
+            console.log("-- handleError --");
+            console.log(error);
+        }
+
+        function handleSuccess(stream, callback) {
+            console.log('Got stream with constraints:', constraints);
+            stream.oninactive = function() {
+                console.log('Stream inactive');
+            };
+            window.stream = stream; // make variable available to browser console
+
+            var video = document.createElement('video');
+            video.srcObject = stream;
+            video.controls = true;
+            video.muted = true;
+            peer.onStreamAdded({
+                mediaElement: video,
+                userid: 'self',
+                stream: stream
             });
+            callback(stream);
+        }
+
+        function getUserMedia(callback) {
+            var constraints = window.constraints = {
+                audio: false,
+                video: true
+            };
+            navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+                handleSuccess(stream, callback);
+            }).catch(handleError);
         }
     };

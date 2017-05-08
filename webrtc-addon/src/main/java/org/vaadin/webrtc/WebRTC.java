@@ -7,6 +7,7 @@ import com.vaadin.ui.*;
 @StyleSheet({ "vaadin://webrtc/style.css" })
 @JavaScript({
         "vaadin://webrtc/socket.io.js",
+        "https://webrtc.github.io/adapter/adapter-latest.js",
         "vaadin://webrtc/PeerConnection.js",
         "vaadin://webrtc/webrtc-connector.js"})
 public class WebRTC extends AbstractJavaScriptComponent {
@@ -28,16 +29,33 @@ public class WebRTC extends AbstractJavaScriptComponent {
         });
     }
 
+    /**
+     * Open a peer-to-peer connection through the signaling server
+     * @param userId
+     * @param channelId
+     */
+    public void connect(String userId, String channelId) {
+        callFunction("connect", userId, channelId);
+    }
+
+    /**
+     * Start web cam sharing
+     */
+    public void shareWebCam() {
+        callFunction("shareWebCam");
+    }
+
+    /**
+     * Disconnect
+     */
+    public void disconnect() {
+        callFunction("disconnect");
+    }
+
     @Override
     protected WebRTCState getState() {
         return (WebRTCState) super.getState();
     }
 
-    public void connect(String username, String roomid) {
-        callFunction("connect", username, roomid);
-    }
 
-    public void shareWebCam() {
-        callFunction("shareWebCam");
-    }
 }

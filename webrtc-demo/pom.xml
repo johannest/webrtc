@@ -145,7 +145,7 @@
 				<artifactId>jetty-maven-plugin</artifactId>
 				<version>${jetty.plugin.version}</version>
 				<configuration>
-					<scanIntervalSeconds>2</scanIntervalSeconds>
+					<scanIntervalSeconds>0</scanIntervalSeconds>
 					<!-- uncomment to use SSL -->
 					<!--<jettyXml>src/main/resources/jetty.xml,src/main/resources/jetty-ssl.xml,src/main/resources/jetty-https.xml</jettyXml>-->
 				</configuration>
