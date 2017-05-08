@@ -14,7 +14,7 @@
         new Signaler(this, socketURL, socketEvent);
 		
 		this.addStream = function(stream) {	
-			this.MediaStream = stream;
+			this.MediaStreamTrack = stream;
 		};
     };
 
@@ -22,7 +22,7 @@
         var self = this;
 
         root.startBroadcasting = function() {
-			if(!root.MediaStream) throw 'Offerer must have media stream.';
+			if(!root.MediaStreamTrack) throw 'Offerer must have media stream.';
 			
             (function transmit() {
                 socket.send({
@@ -49,7 +49,7 @@
 
             if (sdp.type == 'offer') {
                 root.peers[message.userid] = Answer.createAnswer(merge(options, {
-                    MediaStream: root.MediaStream,
+                    MediaStreamTrack: root.MediaStreamTrack,
                     sdp: sdp
                 }));
             }
@@ -61,7 +61,7 @@
 
         root.acceptRequest = function(userid) {
             root.peers[userid] = Offer.createOffer(merge(options, {
-                MediaStream: root.MediaStream
+                MediaStreamTrack: root.MediaStreamTrack
             }));
         };
 
@@ -125,7 +125,7 @@
 
         function closePeerConnections() {
             self.stopBroadcasting = true;
-            if (root.MediaStream) root.MediaStream.stop();
+            if (root.MediaStreamTrack) root.MediaStreamTrack.getVideoTracks()[0].stop();
 
             for (var userid in root.peers) {
                 root.peers[userid].peer.close();
@@ -203,10 +203,6 @@
         socket.on(socketEvent, onmessage);
     }
 
-    var RTCPeerConnection = window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
-    var RTCSessionDescription = window.mozRTCSessionDescription || window.RTCSessionDescription;
-    var RTCIceCandidate = window.mozRTCIceCandidate || window.RTCIceCandidate;
-
     navigator.getUserMedia = navigator.mozGetUserMedia || navigator.webkitGetUserMedia;
     window.URL = window.webkitURL || window.URL;
 
@@ -214,11 +210,11 @@
     var isChrome = !!navigator.webkitGetUserMedia;
 
     var STUN = {
-        url: isChrome ? 'stun:stun.l.google.com:19302' : 'stun:23.21.150.121'
+        urls: isChrome ? 'stun:stun.l.google.com:19302' : 'stun:23.21.150.121'
     };
 
     var TURN = {
-        url: 'turn:homeo@turn.bistri.com:80',
+        urls: 'turn:homeo@turn.bistri.com:80',
         credential: 'homeo'
     };
 
@@ -264,9 +260,9 @@
         createOffer: function(config) {
             var peer = new RTCPeerConnection(iceServers, optionalArgument);
 
-            if (config.MediaStream) peer.addStream(config.MediaStream);
-            peer.onaddstream = function(event) {
-                config.onStreamAdded(event.stream);
+            if (config.MediaStreamTrack) peer.addStream(config.MediaStreamTrack);
+            peer.ontrack = function(event) {
+                config.onStreamAdded(event.streams[0]);
             };
 
             peer.onicecandidate = function(event) {
@@ -301,9 +297,9 @@
         createAnswer: function(config) {
             var peer = new RTCPeerConnection(iceServers, optionalArgument);
 
-            if (config.MediaStream) peer.addStream(config.MediaStream);
-            peer.onaddstream = function(event) {
-                config.onStreamAdded(event.stream);
+            if (config.MediaStreamTrack) peer.addStream(config.MediaStreamTrack);
+            peer.ontrack = function(event) {
+                config.onStreamAdded(event.streams[0]);
             };
 
             peer.onicecandidate = function(event) {
@@ -337,20 +333,5 @@
     }
 
 	window.URL = window.webkitURL || window.URL;
-	navigator.getMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-	navigator.getUserMedia = function(hints, onsuccess, onfailure) {
-		if(!hints) hints = {audio:true,video:true};
-		if(!onsuccess) throw 'Second argument is mandatory. navigator.getUserMedia(hints,onsuccess,onfailure)';
-		
-		navigator.getMedia(hints, _onsuccess, _onfailure);
-		
-		function _onsuccess(stream) {
-			onsuccess(stream);
-		}
-		
-		function _onfailure(e) {
-			if(onfailure) onfailure(e);
-			else throw Error('getUserMedia failed: ' + JSON.stringify(e, null, '\t'));
-		}
-	};
+
 })();
