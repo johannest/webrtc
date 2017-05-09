@@ -2,19 +2,22 @@ WebRTC
 ======
 Simple Vaadin add-on for a WebRTC peer-to-peer webcam sharing
 
-Works only in FF as-is but should work also in Chrome and Edge if using a valid SSL certificate.
+Works only in FF as-is but should work also in Chrome, Opera, and Edge if using a valid SSL certificate.
+
+Info
+====
+Te main JS logic is from this WebRTC Experiment project:
+https://github.com/muaz-khan/WebRTC-Experiment/tree/master/socket.io
+
+It has been modernized using this webrtc.org example (using adapter.js) and replacing deprecated stuff to newer ones:
+https://github.com/webrtc/samples/tree/gh-pages/src/content/peerconnection/pc1
 
 Workflow
 ========
-
 To compile the entire project, run "mvn install".
 
-To run the application, run "mvn jetty:run" and open http://localhost:8080/ .
+To run the application, run "mvn jetty:run" on webrtc-demo directory and open http://localhost:8080/ .
 
-To produce a deployable production mode WAR:
-- change productionMode to true in the servlet class configuration (nested in the UI class)
-- run "mvn clean package"
-- test the war file with "mvn jetty:run-war"
 
 Acknowledgement
 ===============
