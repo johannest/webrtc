@@ -44,27 +44,23 @@ window.org_vaadin_webrtc_WebRTC =
             peer = new PeerConnection(socket);
             peer.userid = username;
 
+            /**
+             * Do whatever you want to do here when new user broadcast is found.
+             * @param userid
+             */
             peer.onUserFound = function(userid) {
-                if (document.getElementById(userid)) return;
-                self.connected(userid);
                 console.log("onUserFound: "+userid);
-
-                    getUserMedia(function (stream) {
-                        var videoTracks = stream.getVideoTracks();
-                        console.log('Got stream with constraints:', constraints);
-                        console.log('Using video device: ' + videoTracks[0].label);
-
-                        peer.addStream(stream);
-                        peer.sendParticipationRequest(userid);
-                    });
+                self.connected(userid);
+                peer.sendParticipationRequest(userid);
             };
 
             peer.onStreamAdded = function(e) {
-                if (document.getElementById(e.userid)) return;
-                self.streamStarted(e.userid);
+                var userId = e.userid || e.participantid;
+                if (document.getElementById(userId)) return;
+                self.streamStarted(userId);
                 console.log("onStreamAdded: "+e);
                 var video = e.mediaElement;
-                video.id = e.userid;
+                video.id = userId;
                 video.setAttribute('width', 400);
                 videosContainer.insertBefore(video, videosContainer.firstChild);
                 video.play();
@@ -125,7 +121,7 @@ window.org_vaadin_webrtc_WebRTC =
                 audio: false,
                 video: true
             };
-            navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+            navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
                 handleSuccess(stream, callback);
             }).catch(handleError);
         }
