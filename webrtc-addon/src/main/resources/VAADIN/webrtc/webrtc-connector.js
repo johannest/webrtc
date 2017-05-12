@@ -9,12 +9,48 @@ window.org_vaadin_webrtc_WebRTC =
         var self = this;
         var element = this.getElement();
 
+        var container  = document.createElement("div");
+        container.setAttribute("class", "flex-container  container");
+
+
         var videosContainer = document.createElement("div");
         videosContainer.id = "videos-container";
-        element.appendChild(videosContainer);
+        videosContainer.setAttribute("class", "flex-container video-container");
+        container.appendChild(videosContainer);
+
+        var toggleSizesButton = createToggleStreamSizesButton();
+
+        container.appendChild(toggleSizesButton);
+        element.appendChild(container);
+
         var peer;
         var selfId;
-        var peerId;
+
+        var selfElementWidth = "30%";
+        var peerElementWidth = "70%";
+
+        function createToggleStreamSizesButton() {
+
+            var toggleSizes = document.createElement("button");
+            toggleSizes.innerHTML = "Toggle";
+            toggleSizes.classList.add("toggle-button");
+            toggleSizes.classList.add("button-hidden");
+            toggleSizes.classList.add("v-button");
+            toggleSizes.addEventListener("click", function(event) {
+                var videos = document.getElementsByTagName('video');
+                if(videos.length > 1) {
+                    switchWidths(videos[0], videos[1]);
+                }
+            });
+
+            function switchWidths(firstElement, secondElement) {
+                var temp = firstElement.getAttribute('width');
+                firstElement.setAttribute('width', secondElement.getAttribute('width'));
+                secondElement.setAttribute('width', temp);
+            }
+
+            return toggleSizes;
+        }
 
         this.onStateChange = function () {
         };
@@ -55,14 +91,27 @@ window.org_vaadin_webrtc_WebRTC =
             };
 
             peer.onStreamAdded = function(e) {
+
                 var userId = e.userid || e.participantid;
                 if (document.getElementById(userId)) return;
                 self.streamStarted(userId);
                 console.log("onStreamAdded: "+e);
+
                 var video = e.mediaElement;
                 video.id = userId;
-                video.setAttribute('width', 400);
+                if(e.userid) {
+                    video.setAttribute("class", "video-element self-stream");
+                    setElementWidth(video, selfElementWidth);
+                } else {
+                    video.setAttribute("class", "video-element peer-stream");
+                    setElementWidth(video, peerElementWidth);
+                }
+
                 videosContainer.insertBefore(video, videosContainer.firstChild);
+                if(videosContainer.childElementCount > 1) {
+                    toggleSizesButton.classList.remove("button-hidden");
+                }
+
                 video.play();
             };
 
@@ -91,6 +140,29 @@ window.org_vaadin_webrtc_WebRTC =
             peer.close();
         };
 
+        this.resizeSelfWidth = function(width) {
+            selfElementWidth = width;
+            var element = document.getElementById(selfId);
+            if (element) {
+                setElementWidth(element, width);
+            }
+        };
+
+        this.resizePeerWidth = function(width) {
+            peerElementWidth = width;
+            var videos = document.getElementsByTagName('video');
+            for(var index = 0; index < videos.length; index++) {
+                var video = videos[index];
+                if(video.id !== selfId) {
+                    setElementWidth(video, width);
+                }
+            }
+        };
+
+        function setElementWidth(element, width) {
+            element.setAttribute('width', width);
+        }
+
         function handleError(error) {
             console.log("-- handleError --");
             console.log(error);
@@ -104,13 +176,13 @@ window.org_vaadin_webrtc_WebRTC =
             window.stream = stream; // make variable available to browser console
 
             var video = document.createElement('video');
-            video.id = "self";
+            video.id = selfId;
             video.srcObject = stream;
             video.controls = true;
             video.muted = true;
             peer.onStreamAdded({
                 mediaElement: video,
-                userid: 'self',
+                userid: selfId,
                 stream: stream
             });
             callback(stream);

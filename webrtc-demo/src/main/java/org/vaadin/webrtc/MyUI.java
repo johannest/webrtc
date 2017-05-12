@@ -21,6 +21,7 @@ public class MyUI extends UI {
     protected void init(VaadinRequest vaadinRequest) {
         final VerticalLayout layout = new VerticalLayout();
         final HorizontalLayout hl = new HorizontalLayout();
+        final HorizontalLayout streamLayout = new HorizontalLayout();
 
         final TextField name = new TextField();
         name.setCaption("User identifier:");
@@ -44,9 +45,18 @@ public class MyUI extends UI {
         hl.setComponentAlignment(start, Alignment.BOTTOM_LEFT);
         hl.setComponentAlignment(stop, Alignment.BOTTOM_LEFT);
         layout.addComponents(hl);
-        layout.addComponent(webRTC);
+        layout.addComponent(streamLayout);
+        streamLayout.addComponent(webRTC);
 
         setContent(layout);
+
+        Slider selfSizeSlider = new Slider("Change webcam size: ", 10, 100);
+        selfSizeSlider.addValueChangeListener(event -> {
+            Float selectedValue = Float.valueOf(event.getValue().toString());
+            webRTC.setOwnCameraWidth(selectedValue, Unit.PERCENTAGE);
+            webRTC.setPeerCameraWidth(100 - selectedValue, Unit.PERCENTAGE);
+        });
+        streamLayout.addComponent(selfSizeSlider);
     }
 
     @WebServlet(urlPatterns = {"/*"}, name = "MyUIServlet", asyncSupported = true)
