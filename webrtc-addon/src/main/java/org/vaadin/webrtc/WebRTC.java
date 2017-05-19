@@ -6,7 +6,7 @@ import com.vaadin.ui.AbstractJavaScriptComponent;
 
 @StyleSheet({ "vaadin://webrtc/style.css" })
 @JavaScript({
-        "vaadin://webrtc/socket.io.js",
+        "https://cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.7/socket.io.js",
         "https://webrtc.github.io/adapter/adapter-latest.js",
         "vaadin://webrtc/PeerConnection.js",
         "vaadin://webrtc/webrtc-connector.js"})

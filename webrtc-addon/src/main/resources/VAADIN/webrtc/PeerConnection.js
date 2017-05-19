@@ -4,7 +4,7 @@
 // Modified by Johannes Tuikkala @ vaadin.com (2017)
 (function() {
 
-    window.PeerConnection = function(socketURL, socketEvent, userid) {
+    window.PeerConnection = function(parent, socketURL, socketEvent, userid) {
         this.userid = userid || getToken();
         this.peers = { };
 
@@ -16,6 +16,10 @@
 		this.addStream = function(stream) {	
 			this.MediaStreamTrack = stream;
 		};
+
+        this.disconnectionHappened = function () {
+            parent.disconnectionHappened();
+        };
     };
 
     function Signaler(root, socketURL, socketEvent) {
@@ -51,7 +55,7 @@
                 root.peers[message.userid] = Answer.createAnswer(merge(options, {
                     MediaStreamTrack: root.MediaStreamTrack,
                     sdp: sdp
-                }));
+                }), root);
             }
 
             if (sdp.type === 'answer') {
@@ -191,13 +195,6 @@
 		}
 		
 		var socket = socketURL;
-		if(typeof socketURL === 'string') {
-			var socket = io.connect(socketURL);
-			socket.send = function(data) {
-				socket.emit(socketEvent, data);
-			};
-		}
-        
         socket.on(socketEvent, onmessage);
     }
 
@@ -229,9 +226,6 @@
 	
 	function onSdpError() {}
 
-    // var offer = Offer.createOffer(config);
-    // offer.setRemoteDescription(sdp);
-    // offer.addIceCandidate(candidate);
     var Offer = {
         createOffer: function(config) {
             var peer = new RTCPeerConnection(iceServers, optionalArgument);
@@ -266,11 +260,8 @@
         }
     };
 
-    // var answer = Answer.createAnswer(config);
-    // answer.setRemoteDescription(sdp);
-    // answer.addIceCandidate(candidate);
     var Answer = {
-        createAnswer: function(config) {
+        createAnswer: function(config, root) {
             var peer = new RTCPeerConnection(iceServers, optionalArgument);
 
             if (config.MediaStreamTrack) peer.addStream(config.MediaStreamTrack);
@@ -290,6 +281,12 @@
             }, onSdpError, offerAnswerConstraints);
 
             this.peer = peer;
+
+            peer.oniceconnectionstatechange = function(event) {
+                if (peer.iceConnectionState==="disconnected" || peer.iceConnectionState==="failed") {
+                    root.disconnectionHappened();
+                }
+            };
 
             return this;
         },

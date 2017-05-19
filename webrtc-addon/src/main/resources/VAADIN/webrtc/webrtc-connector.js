@@ -25,7 +25,8 @@ window.org_vaadin_webrtc_WebRTC =
 
         var peer;
         var selfId;
-
+        var peerId;
+        var wasDisconnected = false;
         var selfElementWidth = "30%";
         var peerElementWidth = "70%";
 
@@ -59,7 +60,7 @@ window.org_vaadin_webrtc_WebRTC =
             var channel = roomid;
             var sender = username;
             selfId = username;
-            var SIGNALING_SERVER = 'https://webrtcweb.com:9559/';
+            var SIGNALING_SERVER = 'http://'+document.domain+':8888/';
             io.connect(SIGNALING_SERVER).emit('new-channel', {
                 channel: channel,
                 sender: sender
@@ -67,18 +68,30 @@ window.org_vaadin_webrtc_WebRTC =
             var socket = io.connect(SIGNALING_SERVER + channel);
             socket.on('connect', function () {
                 // setup peer connection & pass socket object over the constructor!
-                console.log("connect");
+                console.log("socket.io: connect");
+            });
+            socket.on('disconnect', function () {
+                console.log("socket.io: disconnect");
+            });
+            socket.on('error', function (e) {
+                console.log("socket.io: error: "+e);
             });
             socket.send = function (message) {
-                console.log("send: "+message);
+                console.log("send: "+JSON.stringify(message));
                 socket.emit('message', {
                     sender: sender,
                     data: message
                 });
             };
 
-            peer = new PeerConnection(socket);
+            peer = new PeerConnection(this, socket);
             peer.userid = username;
+
+            this.disconnectionHappened = function () {
+                console.warn("disconnectionHappened");
+                wasDisconnected = true;
+                peer.sendParticipationRequest(peerId);
+            };
 
             /**
              * Do whatever you want to do here when new user broadcast is found.
@@ -86,33 +99,39 @@ window.org_vaadin_webrtc_WebRTC =
              */
             peer.onUserFound = function(userid) {
                 console.log("onUserFound: "+userid);
+                peerId = userid;
                 self.connected(userid);
                 peer.sendParticipationRequest(userid);
             };
 
             peer.onStreamAdded = function(e) {
-
                 var userId = e.userid || e.participantid;
-                if (document.getElementById(userId)) return;
                 self.streamStarted(userId);
                 console.log("onStreamAdded: "+e);
 
-                var video = e.mediaElement;
-                video.id = userId;
-                if(e.userid) {
-                    video.setAttribute("class", "video-element self-stream");
-                    setElementWidth(video, selfElementWidth);
-                } else {
-                    video.setAttribute("class", "video-element peer-stream");
-                    setElementWidth(video, peerElementWidth);
+                var video = document.getElementById(userId);
+                if (video && wasDisconnected) {
+                    wasDisconnected = false;
+                    console.log("re-streaming");
+                    video.srcObject = e.mediaElement.srcObject;
                 }
+                if (!video) {
+                    var video = e.mediaElement;
+                    video.id = userId;
+                    if(e.userid) {
+                        video.setAttribute("class", "video-element self-stream");
+                        setElementWidth(video, selfElementWidth);
+                    } else {
+                        video.setAttribute("class", "video-element peer-stream");
+                        setElementWidth(video, peerElementWidth);
+                    }
 
-                videosContainer.insertBefore(video, videosContainer.firstChild);
-                if(videosContainer.childElementCount > 1) {
-                    toggleSizesButton.classList.remove("button-hidden");
+                    videosContainer.insertBefore(video, videosContainer.firstChild);
+                    if (videosContainer.childElementCount > 1) {
+                        toggleSizesButton.classList.remove("button-hidden");
+                    }
+                    video.play();
                 }
-
-                video.play();
             };
 
             peer.onStreamEnded = function(e) {
