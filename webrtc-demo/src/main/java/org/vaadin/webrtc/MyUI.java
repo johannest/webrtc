@@ -33,15 +33,18 @@ public class MyUI extends UI {
 
         WebRTC webRTC = new WebRTC();
 
-        Button start = new Button("Share webcam", e-> {
+        Button connect = new Button("Connect", e-> {
             webRTC.connect(name.getValue(), roomNumber.getValue());
+        });
+        Button start = new Button("Share webcam", e-> {
             webRTC.shareWebCam();
         });
         Button stop = new Button("Disconnect", e-> {
             webRTC.disconnect();
         });
 
-        hl.addComponents(name,  roomNumber, start, stop);
+        hl.addComponents(name,  roomNumber, connect, start, stop);
+        hl.setComponentAlignment(connect, Alignment.BOTTOM_LEFT);
         hl.setComponentAlignment(start, Alignment.BOTTOM_LEFT);
         hl.setComponentAlignment(stop, Alignment.BOTTOM_LEFT);
         layout.addComponents(hl);

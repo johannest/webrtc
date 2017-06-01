@@ -1,85 +1,63 @@
-var fs = require('fs');
+'use strict';
 
-var _static = require('node-static');
-var file = new _static.Server('./static', {
-    cache: false
-});
+var nodeStatic = require('node-static');
+var nodeStaticServer = new nodeStatic.Server('./static', {cache: false});
 
-var app = require('http').createServer(serverCallback);
+var app = require('http').createServer(serverCallback).listen(8888);
 
 function serverCallback(request, response) {
-    request.addListener('end', function () {
-        response.setHeader('Access-Control-Allow-Origin', '*');
-        response.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-        response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  request.addListener('end', function() {
+    response.setHeader('Access-Control-Allow-Origin', '*');
+    response.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-        file.serve(request, response);
-    }).resume();
+    nodeStaticServer.serve(request, response);
+  }).resume();
 }
 
-var io = require('socket.io').listen(app, {
-    log: true,
-    origins: '*:*'
+var socketIO = require('socket.io');
+var io = socketIO.listen(app, {
+  origins: '*:*',
+  transports: ['polling', 'websocket']
 });
 
-io.set('transports', [
-    'websocket',
-    'xhr-polling',
-    'jsonp-polling'
-]);
+io.sockets.on('connection', function(socket) {
 
-var channels = {};
+  socket.on('create or join', function(room) {
+    log('Received request to create or join room ' + room);
 
-io.sockets.on('connection', function (socket) {
-    var initiatorChannel = '';
-    if (!io.isConnected) {
-        io.isConnected = true;
+    var numClients = 0;
+    if (io.sockets.adapter.rooms[room]) {
+      numClients = io.sockets.adapter.rooms[room].length;
     }
 
-    socket.on('new-channel', function (data) {
-        if (!channels[data.channel]) {
-            initiatorChannel = data.channel;
-        }
+    if (numClients === 0) { // add first socket
+      socket.join(room);
+      socket.emit('joined', room, socket.id);
+      log('Client ID ' + socket.id + ' created and joined room ' + room);
+    } else if (numClients === 1) { // add second socket
+      socket.join(room);
+      log('Client ID ' + socket.id + ' joined room ' + room);
+      socket.emit('joined', room, socket.id);
+    } else { // max two sockets per room
+      socket.emit('full', room);
+    }
 
-        channels[data.channel] = data.channel;
-        onNewNamespace(data.channel, data.sender);
-    });
+    log('Room ' + room + ' has ' + io.sockets.adapter.rooms[room].length + ' client(s)');
+  });
 
-    socket.on('presence', function (channel) {
-        var isChannelPresent = !! channels[channel];
-        socket.emit('presence', isChannelPresent);
-    });
+  socket.on('message', function(data) {
+    socket.broadcast.emit('message', data.data);
+  });
 
-    socket.on('disconnect', function (channel) {
-        if (initiatorChannel) {
-            delete channels[initiatorChannel];
-        }
-    });
+  socket.on('disconnect', function() {
+    // TODO: handle disconnect
+  });
+
+  /* function to log server messages on the client */
+  function log() {
+    var array = ['Message from server:'];
+    array.push.apply(array, arguments);
+    socket.emit('log', array);
+  }
 });
-
-function onNewNamespace(channel, sender) {
-    io.of('/' + channel).on('connection', function (socket) {
-        var username;
-        if (io.isConnected) {
-            io.isConnected = false;
-            socket.emit('connect', true);
-        }
-
-        socket.on('message', function (data) {
-            if (data.sender == sender) {
-                if(!username) username = data.data.sender;
-
-                socket.broadcast.emit('message', data.data);
-            }
-        });
-
-        socket.on('disconnect', function() {
-            if(username) {
-                socket.broadcast.emit('user-left', username);
-                username = null;
-            }
-        });
-    });
-}
-
-app.listen(8888);
