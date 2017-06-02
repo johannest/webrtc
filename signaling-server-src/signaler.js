@@ -23,21 +23,17 @@ var io = socketIO.listen(app, {
 
 io.sockets.on('connection', function(socket) {
 
-  socket.on('create or join', function(room) {
-    log('Received request to create or join room ' + room);
-
+  socket.on('join room', function(room) {
     var numClients = 0;
-    if (io.sockets.adapter.rooms[room]) {
+    if (io.sockets.adapter.rooms[room]) { // if room exists
       numClients = io.sockets.adapter.rooms[room].length;
     }
 
     if (numClients === 0) { // add first socket
       socket.join(room);
       socket.emit('joined', room, socket.id);
-      log('Client ID ' + socket.id + ' created and joined room ' + room);
     } else if (numClients === 1) { // add second socket
       socket.join(room);
-      log('Client ID ' + socket.id + ' joined room ' + room);
       socket.emit('joined', room, socket.id);
     } else { // max two sockets per room
       socket.emit('full', room);

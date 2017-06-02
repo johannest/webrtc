@@ -35,30 +35,23 @@ window.org_vaadin_webrtc_WebRTC = function() {
     var sender = username;
     selfId = username;
     var SIGNALING_SERVER = 'http://' + document.domain + ':8888/';
-
-    var isInitiator = false;
-    var isChannelReady = false;
-
     var socket = io.connect(SIGNALING_SERVER);
 
     if (roomid !== '') {
-      socket.emit('create or join', roomid);
+      socket.emit('join room', roomid);
       console.log('Attempted to create or  join room', roomid);
     }
 
     socket.on('created', function(room) {
       console.log('Created room ' + room);
-      isInitiator = true;
     });
 
     socket.on('join', function (room){
       console.log('Another peer made a request to join room ' + room);
-      isChannelReady = true;
     });
 
     socket.on('joined', function(room) {
-      console.log('joined: ' + room);
-      isChannelReady = true;
+      console.log(socket.id + ' joined: ' + room);
 
       // create peer connection
       peer = new PeerConnection(that, socket, 'message', username);
@@ -114,7 +107,6 @@ window.org_vaadin_webrtc_WebRTC = function() {
     });
 
     socket.on('full', function(room) {
-      console.log('Room ' + room + ' is full');
       alert('Room ' + room + ' is full. Please try again later!');
     });
 
@@ -126,16 +118,16 @@ window.org_vaadin_webrtc_WebRTC = function() {
       console.log("socket.io: error: " + e);
     });
 
+    socket.on('log', function(array) {
+      console.log.apply(console, array);
+    });
+
     socket.customSend = function(message) {
       socket.send({
         sender: sender,
         data: message
       });
     };
-
-    socket.on('log', function(array) {
-      console.log.apply(console, array);
-    });
 
     this.disconnectionHappened = function() {
       console.warn("disconnectionHappened");
