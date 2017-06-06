@@ -1,14 +1,22 @@
 'use strict';
+
 /**
- * Source code modified from code of
- * https://github.com/muaz-khan/WebRTC-Experiment/tree/master/socket.io
- * and
- * https://github.com/webrtc/samples/blob/gh-pages/src/content/getusermedia/gum/js/main.js
+ * WebRTC frontend wrapper.
+ *
+ * For more information see: https://temasys.com.sg
  */
 window.org_vaadin_webrtc_WebRTC = function() {
-  var self = this;
-  var element = this.getElement();
 
+  var API_KEY = "097404bd-1426-4fbd-9c99-5cf97eeeecd4";
+
+  var self = this;
+  var selfElementWidth = "30%";
+  var selfStreamClass = "self-stream";
+  var peerElementWidth = "70%";
+  var peerStreamClass = "peer-stream";
+
+  // build UI
+  var element = self.getElement();
   var container = document.createElement("div");
   container.setAttribute("class", "flex-container  container");
 
@@ -18,188 +26,96 @@ window.org_vaadin_webrtc_WebRTC = function() {
   container.appendChild(videosContainer);
 
   var toggleSizesButton = createToggleStreamSizesButton();
-
   container.appendChild(toggleSizesButton);
   element.appendChild(container);
 
-  var peer;
-  var selfId;
-  var peerId;
-  var wasDisconnected = false;
-  var selfElementWidth = "30%";
-  var peerElementWidth = "70%";
+  // setup Skylink
+  var skylink = new Skylink();
 
-  this.connect = function(username, roomid) {
-    var that = this;
-    var channel = roomid;
-    var sender = username;
-    selfId = username;
-    var SIGNALING_SERVER = 'http://' + document.domain + ':8888/';
-    var socket = io.connect(SIGNALING_SERVER);
-
-    if (roomid !== '') {
-      socket.emit('join room', roomid);
-      console.log('Attempted to create or  join room', roomid);
+  skylink.on('peerJoined', function(peerId, peerInfo, isSelf) {
+    console.log("[peerJoined]: " + peerId + " " + isSelf);
+    if(isSelf) {
+      var vid = document.getElementById(peerId);
+      if (!vid) {
+        addVideo(peerId, selfStreamClass);
+      }
+    } else {
+      addVideo(peerId, peerStreamClass);
     }
+  });
 
-    socket.on('created', function(room) {
-      console.log('Created room ' + room);
+  skylink.on('incomingStream', function(peerId, stream, isSelf) {
+    console.log("[incomingStream]: " + peerId + " " + isSelf);
+    var vid = document.getElementById(peerId);
+    vid.srcObject = stream;
+    if (isSelf) {
+      setElementWidth(vid, selfElementWidth);
+    } else {
+      setElementWidth(vid, peerElementWidth);
+      toggleSizesButton.classList.remove("button-hidden");
+    }
+  });
+
+  skylink.on("peerLeft", function(peerId, peerInfo, isSelf) {
+    if (!isSelf) {
+      var peerVideo = document.getElementById(peerId);
+      if (peerVideo) { // do a check if peerVideo exists first
+        videosContainer.removeChild(peerVideo);
+      } else {
+        console.error("Peer video for " + peerId + " is not found.");
+      }
+      toggleSizesButton.classList.remove("button-hidden");
+    }
+  });
+
+  // webrtc methods
+  this.shareWebCam = function(username, roomid) {
+    // init() should always be called first before other methods other than event methods like on() or off().
+    skylink.init(API_KEY, function(error, success) {
+      if (success) {
+        skylink.joinRoom(roomid, {
+          userData: username,
+          audio: true,
+          video: true
+        });
+      } else if (error) {
+        console.error("An error occurred while initializing skylink " + error);
+      }
     });
-
-    socket.on('join', function (room){
-      console.log('Another peer made a request to join room ' + room);
-    });
-
-    socket.on('joined', function(room) {
-      console.log(socket.id + ' joined: ' + room);
-
-      // create peer connection
-      peer = new PeerConnection(that, socket, 'message', username);
-
-      peer.onUserFound = function(userid) {
-        console.log("onUserFound: " + userid);
-        peerId = userid;
-        self.connected(userid);
-        peer.sendParticipationRequest(userid);
-      };
-
-      peer.onStreamAdded = function(e) {
-        var userId = e.userid || e.participantid;
-        self.streamStarted(userId);
-        console.log("onStreamAdded: " + e);
-
-        var video = document.getElementById(userId);
-        if (video && wasDisconnected) {
-          wasDisconnected = false;
-          console.log("re-streaming");
-          video.srcObject = e.mediaElement.srcObject;
-        }
-        if (!video) {
-          var video = e.mediaElement;
-          video.id = userId;
-          if (e.userid) {
-            video.setAttribute("class", "video-element self-stream");
-            setElementWidth(video, selfElementWidth);
-          } else {
-            video.setAttribute("class", "video-element peer-stream");
-            setElementWidth(video, peerElementWidth);
-          }
-
-          videosContainer.insertBefore(video, videosContainer.firstChild);
-          if (videosContainer.childElementCount > 1) {
-            toggleSizesButton.classList.remove("button-hidden");
-          }
-          video.play();
-        }
-      };
-
-      peer.onStreamEnded = function(e) {
-        self.streamEnded(e.userid);
-        console.log("onStreamEnded: " + e);
-        var video = e.mediaElement;
-        if (video) {
-          video.style.opacity = 0;
-          setTimeout(function() {
-            video.parentNode.removeChild(video);
-          }, 1000);
-        }
-      };
-    });
-
-    socket.on('full', function(room) {
-      alert('Room ' + room + ' is full. Please try again later!');
-    });
-
-    socket.on('disconnect', function() {
-      console.log("socket.io: disconnect");
-    });
-
-    socket.on('error', function(e) {
-      console.log("socket.io: error: " + e);
-    });
-
-    socket.on('log', function(array) {
-      console.log.apply(console, array);
-    });
-
-    socket.customSend = function(message) {
-      socket.send({
-        sender: sender,
-        data: message
-      });
-    };
-
-    this.disconnectionHappened = function() {
-      console.warn("disconnectionHappened");
-      wasDisconnected = true;
-      peer.sendParticipationRequest(peerId);
-    };
-
-  };
-
-  this.shareWebCam = function() {
-    getUserMedia(function(stream) {
-      peer.addStream(stream);
-      peer.startBroadcasting();
-    });
-  };
+  }
 
   this.disconnect = function() {
-    peer.close();
-  };
+    //TODO: disconnect from room
+  }
 
   this.resizeSelfWidth = function(width) {
-    selfElementWidth = width;
-    var element = document.getElementById(selfId);
+    var element = document.getElementsByClassName(selfStreamClass);
     if (element) {
-      setElementWidth(element, width);
+      setElementWidth(element[0], width);
     }
   };
 
   this.resizePeerWidth = function(width) {
-    peerElementWidth = width;
-    var videos = document.getElementsByTagName('video');
+    var videos = document.getElementsByClassName(peerStreamClass);
     for (var index = 0; index < videos.length; index++) {
-      var video = videos[index];
-      if (video.id !== selfId) {
-        setElementWidth(video, width);
-      }
+      setElementWidth(videos[index], width);
     }
   };
 
+  // Utility functions
+  function addVideo(peerId, videoClass) {
+    var vid = document.createElement('video');
+    vid.classList.add(videoClass);
+    vid.classList.add("video-element");
+    vid.autoplay = true;
+    vid.muted = true;
+    vid.controls = true;
+    vid.id = peerId;
+    videosContainer.appendChild(vid);
+  }
+
   function setElementWidth(element, width) {
     element.setAttribute('width', width);
-  }
-
-  function handleError(error) {
-    console.log("-- handleError --");
-    console.log(error);
-  }
-
-  function handleSuccess(stream, callback) {
-    console.log('Got stream with constraints:', constraints);
-    stream.oninactive = function() {
-      console.log('Stream inactive');
-    };
-    window.stream = stream; // make variable available to browser console
-
-    var video = document.createElement('video');
-    video.id = selfId;
-    video.srcObject = stream;
-    video.controls = true;
-    video.muted = true;
-    peer.onStreamAdded({mediaElement: video, userid: selfId, stream: stream});
-    callback(stream);
-  }
-
-  function getUserMedia(callback) {
-    var constraints = window.constraints = {
-      audio: false,
-      video: true
-    };
-    navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
-      handleSuccess(stream, callback);
-    }).catch(handleError);
   }
 
   function createToggleStreamSizesButton() {

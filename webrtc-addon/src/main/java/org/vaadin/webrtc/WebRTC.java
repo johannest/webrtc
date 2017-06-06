@@ -6,9 +6,7 @@ import com.vaadin.ui.AbstractJavaScriptComponent;
 
 @StyleSheet({ "vaadin://webrtc/style.css" })
 @JavaScript({
-        "https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.1/socket.io.js",
-        "https://webrtc.github.io/adapter/adapter-latest.js",
-        "vaadin://webrtc/PeerConnection.js",
+        "https://cdn.temasys.io/skylink/skylinkjs/0.6.x/skylink.complete.min.js",
         "vaadin://webrtc/webrtc-connector.js"})
 public class WebRTC extends AbstractJavaScriptComponent {
 
@@ -33,19 +31,13 @@ public class WebRTC extends AbstractJavaScriptComponent {
     }
 
     /**
-     * Open a peer-to-peer connection through the signaling server
-     * @param userId
-     * @param channelId
+     * Start web camera sharing
+     * 
+     * @param userId the user id.
+     * @param channelId the room id.
      */
-    public void connect(String userId, String channelId) {
-        callFunction("connect", userId, channelId);
-    }
-
-    /**
-     * Start web cam sharing
-     */
-    public void shareWebCam() {
-        callFunction("shareWebCam");
+    public void shareWebCam(String userId, String channelId) {
+        callFunction("shareWebCam", userId, channelId);
     }
 
     /**
