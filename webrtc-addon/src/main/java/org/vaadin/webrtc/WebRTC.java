@@ -19,32 +19,30 @@ public class WebRTC extends AbstractJavaScriptComponent {
     @Override
     public void attach() {
         super.attach();
-        addFunction("connected", args -> {
-            System.out.println("connected:"+args.toJson());
-        });
-        addFunction("streamStarted", args -> {
-            System.out.println("streamStarted:" + args.toJson());
-        });
-        addFunction("streamEnded", args -> {
-            System.out.println("streamEnded:" + args.toJson());
-        });
     }
-
+    
     /**
-     * Start web camera sharing
+     * Start the local web camera.
+     */    
+    public void showWebCam() {
+    	callFunction("showWebCam");
+    }
+    
+    /**
+     * Start web camera sharing and joins the specified room.
      * 
      * @param userId the user id.
      * @param channelId the room id.
      */
-    public void shareWebCam(String userId, String channelId) {
-        callFunction("shareWebCam", userId, channelId);
+    public void joinRoom(String userId, String channelId) {
+        callFunction("joinRoom", userId, channelId);
     }
 
     /**
-     * Disconnect
+     * Leave the room.
      */
-    public void disconnect() {
-        callFunction("disconnect");
+    public void leaveRoom() {
+        callFunction("leaveRoom");
     }
 
     @Override

@@ -1,50 +1,44 @@
-/*
-// Muaz Khan         - www.MuazKhan.com
-// MIT License       - www.WebRTC-Experiment.com/licence
-// Experiments       - github.com/muaz-khan/WebRTC-Experiment
-*/
+
 audio, video {
-    -moz-transition: all 1s ease;
-    -ms-transition: all 1s ease;
-    -o-transition: all 1s ease;
-    -webkit-transition: all 1s ease;
-    transition: all 1s ease;
-    vertical-align: top;
+  -moz-transition: all 1s ease;
+  -ms-transition: all 1s ease;
+  -o-transition: all 1s ease;
+  -webkit-transition: all 1s ease;
+  transition: all 1s ease;
+  vertical-align: top;
+  
+  -ms-transform: rotateY(-180deg);
+  -webkit-transform: rotateY(-180deg);
+  transform: rotateY(-180deg);
 }
 
 .flex-container {
-    display: flex;
-    flex-direction: column;
-    align-content: center;
-    justify-content: space-between;
+  display: flex;
+  flex-direction: column;
+  align-content: center;
+  justify-content: space-between;
 }
 
 .container {
-    width: 100%;
-    height: 100%;
-    min-height: 400px;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
 }
 
 .video-container {
-    overflow: hidden;
-    margin: 2%;
+  overflow: hidden;
+  margin: 2%;
 }
 
 .video-element {
-    margin: auto;
-    padding: 2%;
-}
-
-.peer-stream {
-}
-
-.self-stream {
+  margin: auto;
+  padding: 2%;
 }
 
 .toggle-button {
-    margin: auto;
+  margin: auto;
 }
 
-.button-hidden {
-    display: none;
+.hidden {
+  display: none;
 }

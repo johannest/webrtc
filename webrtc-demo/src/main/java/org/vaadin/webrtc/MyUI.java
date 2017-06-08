@@ -25,24 +25,28 @@ public class MyUI extends UI {
 
         final TextField name = new TextField();
         name.setCaption("User identifier:");
-        name.setValue(String.valueOf(1000000000l+(long)(Math.random()*1000000000.0)));
+        name.setValue(String.valueOf(1000000000l + (long)(Math.random() * 1000000000.0)));
 
         final TextField roomNumber = new TextField();
-        roomNumber.setCaption("Channel identifier:");
+        roomNumber.setCaption("Room identifier:");
         roomNumber.setValue("23482023293");
 
         WebRTC webRTC = new WebRTC();
 
-        Button start = new Button("Share webcam", e-> {
-            webRTC.shareWebCam(name.getValue(), roomNumber.getValue());
+        Button showCamera = new Button("Show webcam", e-> {
+            webRTC.showWebCam();
         });
-        Button stop = new Button("Disconnect", e-> {
-            webRTC.disconnect();
+        Button joinRoom = new Button("Join room", e-> {
+            webRTC.joinRoom(name.getValue(), roomNumber.getValue());
+        });
+        Button leaveRoom = new Button("Leave room", e-> {
+            webRTC.leaveRoom();
         });
 
-        hl.addComponents(name,  roomNumber, start, stop);
-        hl.setComponentAlignment(start, Alignment.BOTTOM_LEFT);
-        hl.setComponentAlignment(stop, Alignment.BOTTOM_LEFT);
+        hl.addComponents(name,  roomNumber, showCamera, joinRoom, leaveRoom);
+        hl.setComponentAlignment(showCamera, Alignment.BOTTOM_LEFT);
+        hl.setComponentAlignment(joinRoom, Alignment.BOTTOM_LEFT);
+        hl.setComponentAlignment(leaveRoom, Alignment.BOTTOM_LEFT);
         layout.addComponents(hl);
         layout.addComponent(streamLayout);
         streamLayout.addComponent(webRTC);

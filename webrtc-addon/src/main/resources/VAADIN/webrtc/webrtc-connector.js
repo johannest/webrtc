@@ -11,9 +11,9 @@ window.org_vaadin_webrtc_WebRTC = function() {
 
   var self = this;
   var selfElementWidth = "30%";
-  var selfStreamClass = "self-stream";
+  var selfVideoId = "selfVideo";
   var peerElementWidth = "70%";
-  var peerStreamClass = "peer-stream";
+  var peerVideoId = "peerVideo";
 
   // build UI
   var element = self.getElement();
@@ -25,6 +25,13 @@ window.org_vaadin_webrtc_WebRTC = function() {
   videosContainer.setAttribute("class", "flex-container video-container");
   container.appendChild(videosContainer);
 
+  var selfVideo = createVideoElement(selfVideoId);
+  setElementWidth(selfVideo, selfElementWidth);
+  var peerVideo = createVideoElement(peerVideoId);
+  setElementWidth(peerVideo, selfElementWidth);
+  videosContainer.appendChild(selfVideo);
+  videosContainer.appendChild(peerVideo);
+
   var toggleSizesButton = createToggleStreamSizesButton();
   container.appendChild(toggleSizesButton);
   element.appendChild(container);
@@ -34,42 +41,48 @@ window.org_vaadin_webrtc_WebRTC = function() {
 
   skylink.on('peerJoined', function(peerId, peerInfo, isSelf) {
     console.log("[peerJoined]: " + peerId + " " + isSelf);
-    if(isSelf) {
-      var vid = document.getElementById(peerId);
-      if (!vid) {
-        addVideo(peerId, selfStreamClass);
-      }
-    } else {
-      addVideo(peerId, peerStreamClass);
-    }
   });
 
   skylink.on('incomingStream', function(peerId, stream, isSelf) {
     console.log("[incomingStream]: " + peerId + " " + isSelf);
-    var vid = document.getElementById(peerId);
-    vid.srcObject = stream;
     if (isSelf) {
-      setElementWidth(vid, selfElementWidth);
+      var video = document.getElementById(selfVideoId);
+      video.srcObject = stream;
+      setElementWidth(video, selfElementWidth);
+      showElement(video);
     } else {
-      setElementWidth(vid, peerElementWidth);
-      toggleSizesButton.classList.remove("button-hidden");
+      var video = document.getElementById(peerVideoId);
+      video.srcObject = stream;
+      setElementWidth(video, peerElementWidth);
+      showElement(video);
+      showElement(toggleSizesButton);
     }
   });
 
   skylink.on("peerLeft", function(peerId, peerInfo, isSelf) {
     if (!isSelf) {
-      var peerVideo = document.getElementById(peerId);
-      if (peerVideo) { // do a check if peerVideo exists first
-        videosContainer.removeChild(peerVideo);
-      } else {
-        console.error("Peer video for " + peerId + " is not found.");
-      }
-      toggleSizesButton.classList.remove("button-hidden");
+      var video = document.getElementById(peerVideoId);
+      video.srcObject = null;
+      hideElement(video);
+      hideElement(toggleSizesButton);
     }
   });
 
-  // webrtc methods
-  this.shareWebCam = function(username, roomid) {
+  // WebRTC addon exposed methods
+  this.showWebCam = function() {
+    skylink.getUserMedia(function(error, stream) {
+      if (error) {
+        console.error("Unable to get camera feed " + error);
+        return;
+      } else {
+        var video = document.getElementById(selfVideoId);
+        video.srcObject = stream;
+        showElement(video);
+      }
+    });
+  }
+
+  this.joinRoom = function(username, roomid) {
     // init() should always be called first before other methods other than event methods like on() or off().
     skylink.init(API_KEY, function(error, success) {
       if (success) {
@@ -79,39 +92,36 @@ window.org_vaadin_webrtc_WebRTC = function() {
           video: true
         });
       } else if (error) {
-        console.error("An error occurred while initializing skylink " + error);
+        console.error("An error occurred while initializing skylink " + error.error.message);
       }
     });
   }
 
-  this.disconnect = function() {
-    //TODO: disconnect from room
+  this.leaveRoom = function(username, roomid) {
+    skylink.leaveRoom(roomid, {userData: username});
+    hideElement(toggleSizesButton);
+    self.showWebCam();
   }
 
   this.resizeSelfWidth = function(width) {
-    var element = document.getElementsByClassName(selfStreamClass);
-    if (element) {
-      setElementWidth(element[0], width);
-    }
+    var video = document.getElementById(selfVideoId);
+    setElementWidth(video, width);
   };
 
   this.resizePeerWidth = function(width) {
-    var videos = document.getElementsByClassName(peerStreamClass);
-    for (var index = 0; index < videos.length; index++) {
-      setElementWidth(videos[index], width);
-    }
+    var video = document.getElementById(peerVideoId);
+    setElementWidth(video, width);
   };
 
   // Utility functions
-  function addVideo(peerId, videoClass) {
-    var vid = document.createElement('video');
-    vid.classList.add(videoClass);
-    vid.classList.add("video-element");
-    vid.autoplay = true;
-    vid.muted = true;
-    vid.controls = true;
-    vid.id = peerId;
-    videosContainer.appendChild(vid);
+  function createVideoElement(videoId) {
+    var video = document.createElement('video');
+    video.id = videoId;
+    video.classList.add("video-element");
+    video.classList.add("hidden"); //initilly hidden
+    video.autoplay = true;
+    video.muted = true;
+    return video;
   }
 
   function setElementWidth(element, width) {
@@ -123,7 +133,7 @@ window.org_vaadin_webrtc_WebRTC = function() {
     var toggleSizes = document.createElement("button");
     toggleSizes.innerHTML = "Toggle";
     toggleSizes.classList.add("toggle-button");
-    toggleSizes.classList.add("button-hidden");
+    toggleSizes.classList.add("hidden");
     toggleSizes.classList.add("v-button");
     toggleSizes.addEventListener("click", function(event) {
       var videos = document.getElementsByTagName('video');
@@ -139,5 +149,13 @@ window.org_vaadin_webrtc_WebRTC = function() {
     }
 
     return toggleSizes;
+  }
+
+  function showElement(element) {
+    element.classList.remove("hidden");
+  }
+
+  function hideElement(element) {
+    element.classList.add("hidden");
   }
 };
