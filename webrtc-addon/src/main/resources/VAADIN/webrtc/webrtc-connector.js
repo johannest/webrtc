@@ -1,5 +1,4 @@
 'use strict';
-
 /**
  * WebRTC frontend wrapper.
  *
@@ -18,22 +17,17 @@ window.org_vaadin_webrtc_WebRTC = function() {
   // build UI
   var element = self.getElement();
   var container = document.createElement("div");
-  container.setAttribute("class", "flex-container  container");
+  container.setAttribute("class", "container");
 
-  var videosContainer = document.createElement("div");
-  videosContainer.id = "videos-container";
-  videosContainer.setAttribute("class", "flex-container video-container");
+  var videosContainer = createVideo();
   container.appendChild(videosContainer);
 
-  var selfVideo = createVideoElement(selfVideoId);
-  setElementWidth(selfVideo, selfElementWidth);
-  var peerVideo = createVideoElement(peerVideoId);
-  setElementWidth(peerVideo, selfElementWidth);
-  videosContainer.appendChild(selfVideo);
-  videosContainer.appendChild(peerVideo);
+  var messagesContainer = createChat();
+  container.appendChild(messagesContainer);
 
   var toggleSizesButton = createToggleStreamSizesButton();
   container.appendChild(toggleSizesButton);
+
   element.appendChild(container);
 
   // setup Skylink
@@ -57,6 +51,13 @@ window.org_vaadin_webrtc_WebRTC = function() {
       showElement(video);
       showElement(toggleSizesButton);
     }
+  });
+
+  skylink.on("incomingMessage", function(message, peerId, stream, isSelf) {
+    console.log(message.content);
+    var chatArea = document.getElementById('chat');
+    var chatHistory = chatArea.value;
+    chatArea.value = chatHistory + "\n" + message.content;
   });
 
   skylink.on("peerLeft", function(peerId, peerInfo, isSelf) {
@@ -114,6 +115,33 @@ window.org_vaadin_webrtc_WebRTC = function() {
   };
 
   // Utility functions
+  function setElementWidth(element, width) {
+    element.setAttribute('width', width);
+  }
+
+  function showElement(element) {
+    element.classList.remove("hidden");
+  }
+
+  function hideElement(element) {
+    element.classList.add("hidden");
+  }
+
+  function createVideo() {
+    var videosContainer = document.createElement("div");
+    videosContainer.id = "videos-container";
+    videosContainer.setAttribute("class", "video-container");
+    container.appendChild(videosContainer);
+
+    var selfVideo = createVideoElement(selfVideoId);
+    setElementWidth(selfVideo, selfElementWidth);
+    var peerVideo = createVideoElement(peerVideoId);
+    setElementWidth(peerVideo, selfElementWidth);
+    videosContainer.appendChild(selfVideo);
+    videosContainer.appendChild(peerVideo);
+    return videosContainer;
+  }
+
   function createVideoElement(videoId) {
     var video = document.createElement('video');
     video.id = videoId;
@@ -124,12 +152,46 @@ window.org_vaadin_webrtc_WebRTC = function() {
     return video;
   }
 
-  function setElementWidth(element, width) {
-    element.setAttribute('width', width);
+  function createChat() {
+    var textArea = document.createElement("textarea");
+    textArea.id = 'chat';
+    textArea.setAttribute('readonly', true);
+    textArea.classList.add("chat-box");
+    textArea.classList.add("v-textarea");
+
+    var inputField = document.createElement("input");
+    inputField.setAttribute("type", "text");
+    inputField.classList.add("chat-input");
+    inputField.classList.add("v-textfield");
+
+    var button = document.createElement("button");
+    button.innerHTML = "Send message";
+    button.classList.add("chat-send");
+    button.classList.add("v-button");
+    button.addEventListener("click", function(event) {
+      var message = inputField.value;
+      if (message !== undefined && message !== "") {
+        console.log("broadcasting message: " + message);
+        var peers = skylink.getPeersInRoom('');
+        skylink.sendMessage(message);
+        inputField.value = "";
+      }
+    });
+
+    var messageInputContainer = document.createElement("div");
+    messageInputContainer.classList.add("chat-controls");
+    messageInputContainer.appendChild(inputField);
+    messageInputContainer.appendChild(button);
+
+    var messageContainer = document.createElement("div");
+    messageContainer.id = "chat-container";
+    messageContainer.setAttribute("class", "chat-container");
+    messageContainer.appendChild(textArea);
+    messageContainer.appendChild(messageInputContainer);
+    return messageContainer;
   }
 
   function createToggleStreamSizesButton() {
-
     var toggleSizes = document.createElement("button");
     toggleSizes.innerHTML = "Toggle";
     toggleSizes.classList.add("toggle-button");
@@ -141,21 +203,11 @@ window.org_vaadin_webrtc_WebRTC = function() {
         switchWidths(videos[0], videos[1]);
       }
     });
-
     function switchWidths(firstElement, secondElement) {
       var temp = firstElement.getAttribute('width');
       firstElement.setAttribute('width', secondElement.getAttribute('width'));
       secondElement.setAttribute('width', temp);
     }
-
     return toggleSizes;
-  }
-
-  function showElement(element) {
-    element.classList.remove("hidden");
-  }
-
-  function hideElement(element) {
-    element.classList.add("hidden");
   }
 };

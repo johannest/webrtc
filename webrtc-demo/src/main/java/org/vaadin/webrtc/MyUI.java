@@ -19,9 +19,6 @@ public class MyUI extends UI {
 
     @Override
     protected void init(VaadinRequest vaadinRequest) {
-        final VerticalLayout layout = new VerticalLayout();
-        final HorizontalLayout hl = new HorizontalLayout();
-        final HorizontalLayout streamLayout = new HorizontalLayout();
 
         final TextField name = new TextField();
         name.setCaption("User identifier:");
@@ -32,6 +29,7 @@ public class MyUI extends UI {
         roomNumber.setValue("23482023293");
 
         WebRTC webRTC = new WebRTC();
+        webRTC.setWidth(100.0f, Unit.PERCENTAGE);
 
         Button showCamera = new Button("Show webcam", e-> {
             webRTC.showWebCam();
@@ -43,15 +41,6 @@ public class MyUI extends UI {
             webRTC.leaveRoom();
         });
 
-        hl.addComponents(name,  roomNumber, showCamera, joinRoom, leaveRoom);
-        hl.setComponentAlignment(showCamera, Alignment.BOTTOM_LEFT);
-        hl.setComponentAlignment(joinRoom, Alignment.BOTTOM_LEFT);
-        hl.setComponentAlignment(leaveRoom, Alignment.BOTTOM_LEFT);
-        layout.addComponents(hl);
-        layout.addComponent(streamLayout);
-        streamLayout.addComponent(webRTC);
-
-        setContent(layout);
 
         Slider selfSizeSlider = new Slider("Change webcam size: ", 10, 100);
         selfSizeSlider.addValueChangeListener(event -> {
@@ -59,7 +48,25 @@ public class MyUI extends UI {
             webRTC.setOwnCameraWidth(selectedValue, Unit.PERCENTAGE);
             webRTC.setPeerCameraWidth(100 - selectedValue, Unit.PERCENTAGE);
         });
-        streamLayout.addComponent(selfSizeSlider);
+
+        final HorizontalLayout controlsContainer = new HorizontalLayout();
+        controlsContainer.setHeightUndefined();
+        controlsContainer.addComponents(name,  roomNumber, showCamera, joinRoom, leaveRoom, selfSizeSlider);
+        controlsContainer.setComponentAlignment(showCamera, Alignment.BOTTOM_LEFT);
+        controlsContainer.setComponentAlignment(joinRoom, Alignment.BOTTOM_LEFT);
+        controlsContainer.setComponentAlignment(leaveRoom, Alignment.BOTTOM_LEFT);
+        
+        final HorizontalLayout streamLayout = new HorizontalLayout();
+        streamLayout.setWidth(100.0f, Unit.PERCENTAGE);
+        streamLayout.addComponent(webRTC);
+        
+        final VerticalLayout layout = new VerticalLayout();
+        layout.setSizeFull();
+        layout.addComponents(controlsContainer);
+        layout.addComponent(streamLayout);
+        layout.setExpandRatio(streamLayout, 1.0f);
+
+        setContent(layout);
     }
 
     @WebServlet(urlPatterns = {"/*"}, name = "MyUIServlet", asyncSupported = true)
