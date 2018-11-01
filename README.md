@@ -1,3 +1,6 @@
+[![Published on Vaadin  Directory](https://img.shields.io/badge/Vaadin%20Directory-published-00b4f0.svg)](https://vaadin.com/directory/component/webrtc-add-on)
+[![Stars on Vaadin Directory](https://img.shields.io/vaadin-directory/star/webrtc-add-on.svg)](https://vaadin.com/directory/component/webrtc-add-on)
+
 WebRTC
 ======
 Simple Vaadin add-on for a WebRTC peer-to-peer webcam sharing
